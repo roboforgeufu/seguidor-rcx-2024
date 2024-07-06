@@ -54,85 +54,92 @@ LineFollower line_follower(13, 12, 14, 27, 33);
 
 const int EN1 = 26;
 const int EN2 = 25;
+int last_read = -1;
+float error = 0;
+float previous_error = error;
+unsigned long time;
+unsigned long previous_time;
+double elapsed_time;
 
 void setup() {
-
   Serial.begin(115200);
   pinMode(EN1, OUTPUT);
   pinMode(EN2, OUTPUT);
 }
 
 void loop() {
+  // int vel_left = 80;
+  // int vel_right = 80;
 
-  while (1) {
+  previous_time = time;
+  time = millis();
+  elapsed_time = (time - previous_time) / 1000;
 
-    int vel_left = 80;
-    int vel_right = 80;
+  line_follower.refresh_values();
 
-    line_follower.refresh_values();
-
-    for (int i = 0; i <= 4; i++) {
-      Serial.print(line_follower.values[i]);
-    }
-    Serial.println("");
-
-    // Sensores intermediários
-    if (line_follower.values[3] == 1) {
-      vel_left = 120;
-      vel_right = 40;
-    }
-    if (line_follower.values[1] == 1) {
-      vel_right = 120;
-      vel_left = 40;
-    }
-
-    if (line_follower.values[0] == 1 && line_follower.values[4] == 1) {
-      // cruzamento (tratativa pra não travar)
-      vel_left = 80;
-      vel_right = 80;
-    }
-    
-    // Sensores das extremidades
-    else if (line_follower.values[4] == 1) {
-      while(line_follower.values[2] != 1) {
-        line_follower.refresh_values();
-        vel_left = 160;
-        vel_right = 0;
-        analogWrite(EN1, vel_left);
-        left_motor.set_speed(100);
-        left_motor.run();
-        analogWrite(EN2, vel_right);
-        right_motor.set_speed(100);
-        right_motor.run();
-      }
-    }
-    else if (line_follower.values[0] == 1) {
-      while(line_follower.values[2] != 1) {
-        line_follower.refresh_values();
-        vel_left = 0;
-        vel_right = 160;
-        analogWrite(EN1, vel_left);
-        left_motor.set_speed(100);
-        left_motor.run();
-        analogWrite(EN2, vel_right);
-        right_motor.set_speed(100);
-        right_motor.run();
-      }
-    }
-
-    
-    Serial.print("Esquerda: ");
-    Serial.print(vel_left);
-
-    Serial.print("\tDireita: ");
-    Serial.println(vel_right);
-
-    analogWrite(EN1, vel_left);
-    left_motor.set_speed(200);
-    left_motor.run();
-
-    analogWrite(EN2, vel_right);
-    right_motor.set_speed(200);
-    right_motor.run();
+  for (int i = 0; i <= 4; i++) {
+    Serial.print(line_follower.values[i]);
   }
+  Serial.println("");
+
+  // Sensores intermediários
+  if (line_follower.values[3] == 1 || last_read == 3) {
+    last_read = 3;
+    // vel_left = 120;
+    // vel_right = 40;
+
+  } else if (line_follower.values[1] == 1 || last_read == 1) {
+    last_read = 1;
+    // vel_right = 120;
+    // vel_left = 40;
+  }
+
+  if (line_follower.values[0] == 1 && line_follower.values[4] == 1) {
+    // cruzamento (tratativa pra não travar)
+    last_read = -1;
+    // vel_left = 80;
+    // vel_right = 80;
+  }
+
+  // Sensores das extremidades
+  else if (line_follower.values[4] == 1) {
+    last_read = -1;
+    while (line_follower.values[2] != 1) {
+      line_follower.refresh_values();
+      // vel_left = 160;
+      // vel_right = 0;
+      // analogWrite(EN1, vel_left);
+      left_motor.set_speed(100);
+      left_motor.run();
+      // analogWrite(EN2, vel_right);
+      right_motor.set_speed(100);
+      right_motor.run();
+    }
+  } else if (line_follower.values[0] == 1) {
+    while (line_follower.values[2] != 1) {
+      line_follower.refresh_values();
+      // vel_left = 0;
+      // vel_right = 160;
+      // analogWrite(EN1, vel_left);
+      left_motor.set_speed(100);
+      left_motor.run();
+      // analogWrite(EN2, vel_right);
+      right_motor.set_speed(100);
+      right_motor.run();
+    }
+  }
+
+  Serial.print("Esquerda: ");
+  // Serial.print(vel_left);
+
+  Serial.print("\tDireita: ");
+  // Serial.println(vel_right);
+
+  // analogWrite(EN1, vel_left);
+  left_motor.set_speed(200);
+  left_motor.run();
+
+  // analogWrite(EN2, vel_right);
+  right_motor.set_speed(200);
+  right_motor.run();
 }
