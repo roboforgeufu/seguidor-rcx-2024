@@ -65,8 +65,8 @@ double p_share;
 double d_share;
 double pd_correction;
 
-const int KP = 3.8;  // constantes de calibracao
-const int KD = 1.6;
+const float KP = 3.8;  // constantes de calibracao
+const float KD = 1.6;
 
 const float SPEED = 120;
 const float VOLT = 9;
@@ -204,7 +204,6 @@ void loop() {
 
   // motor direito
   right_speed = SPEED - pd_correction + increment;
-
   analogWrite(EN2, right_speed);
   right_volt = voltage - (pd_correction/3);
   right_volt = constrain(right_volt, 123, 255); 
