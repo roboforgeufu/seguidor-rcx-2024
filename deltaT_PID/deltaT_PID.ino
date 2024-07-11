@@ -65,8 +65,8 @@ double p_share;
 double d_share;
 double pd_correction;
 
-const float KP = 3.8;  // constantes de calibracao
-const float KD = 1.6;
+const float KP = 4;  // constantes de calibracao
+const float KD = 2;
 
 const float SPEED = 120;
 const float VOLT = 9;
@@ -151,7 +151,7 @@ void loop() {
   float count = 0;
   error = 0;
   for(int i = 0; i <= NUM_OF_SENSORS - 1; i++){
-    if (line_follower.values[i] == 1) {
+    if (line_follower.values[i] == 0) {
       error += sensor_dist_to_line[i];
       count += 1;
     }
