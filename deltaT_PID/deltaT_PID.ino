@@ -225,6 +225,8 @@ void loop() {
 
   // TO DO: evitar escapar da linha com os sensores mais externos
 
+  // TO DO: identificar curvas e linha de chegada
+
   // memset(objects_found, 0, sizeof(objects_found));
 
   delay(20);
