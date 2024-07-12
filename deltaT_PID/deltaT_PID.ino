@@ -74,7 +74,7 @@ double pd_correction;
 
 double current_time_line;
 double previous_time_line;
-double elapsed_time_line;
+double right_line_seen_timestamp = 0;
 
 const float KP = 3;  // constantes de calibracao
 const float KD = 5;
@@ -157,33 +157,45 @@ void loop() {
   }
 
   // tratativa de chegada
-  int count_sensors = 0;
+  int count_sensors_seen_right = 0;
   for (int i = 0; i < NUM_OF_SENSORS; i++) {
-    if (i >= 10 && line_follower.values[i] == 0) {
-      count_sensors += 1;
+    if (i >= 10 && all_sensor_reads[i] == 0) {
+      count_sensors_seen_right += 1;
     }
   }
 
-  elapsed_time_line = 0;
-  if (count_sensors >= 2 && line_flag >= 4) {
+  // tratativa primeiro tempo
+  if(
+    (right_line_seen_timestamp == 0 || millis() - right_line_seen_timestamp > 1000)
+    && count_sensors_seen_right >= 2
+    && line_flag >= 5) {
+    right_line_seen_timestamp = millis();
     right_lines_read++;
-    Serial.println(right_lines_read);
-    if (right_lines_read >= 2) {
-      while (elapsed_time_line <= 1) {
-        Serial.print(" ");
-        Serial.print(elapsed_time_line);
-        Serial.println(" ");
-        previous_time_line = current_time_line;
-        current_time_line = micros();
-        elapsed_time_line = (current_time_line - previous_time_line) / 1000000;
-      }
-      Serial.print(" STOP ");
-      while (1) {
-        analogWrite(EN1, 0);
-        analogWrite(EN2, 0);
-      }
+    if (debug) {
+      Serial.print("RIGH LINES READ: ");
+      Serial.print(right_lines_read);
+      Serial.print(" ");
+      Serial.print(right_line_seen_timestamp);
+      Serial.println("");
     }
   }
+  
+  if (right_lines_read >= 2) {
+    while (millis() - right_line_seen_timestamp <= 400) {
+      if (debug){
+        Serial.print("STOPPING: ");
+        Serial.print(millis() - right_line_seen_timestamp);
+        Serial.print("/100");
+        Serial.println("");
+      }
+    }
+    Serial.print(" STOP ");
+    while (1) {
+      analogWrite(EN1, 0);
+      analogWrite(EN2, 0);
+    }
+  }
+
 
   // // calcula o tamanho dos objetos lidos pelos sensores
   // int start_pos = 0;
