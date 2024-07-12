@@ -71,9 +71,10 @@ double elapsed_time;
 double p_share;
 double d_share;
 double pd_correction;
-float current_time_line;
-float previous_time_line;
-float elapsed_time_line;
+
+double current_time_line;
+double previous_time_line;
+double elapsed_time_line;
 
 const float KP = 3;  // constantes de calibracao
 const float KD = 5;
@@ -93,25 +94,25 @@ float right_volt;
 // float sensor_dist_to_line[] = { -42, -23, 0, 23, 42};
 float sensor_dist_to_line[] = { -88, -81, -72, -66, -58, -42, -23, 0, 23, 42, 58, 66, 72, 81, 88 };
 int line_flag = 0;
+int right_lines_read = 0;
+
 
 uint16_t sensor_values_left[5];
 uint16_t sensor_values_right[5];
 
 bool all_sensor_reads[NUM_OF_SENSORS];
 
-bool debug = false;
+bool debug = true;
 
 void setup() {
   pinMode(EN1, OUTPUT);
   pinMode(EN2, OUTPUT);
 
-  Serial.print("Voltage: ");
-  Serial.println(voltage);
 
   line_follower_8left.setTypeRC();
-  line_follower_8right.setTypeRC();
   line_follower_8left.setEmitterPin(LEFT_EMITTER_PIN);
   line_follower_8right.setEmitterPin(RIGHT_EMITTER_PIN);
+  line_follower_8right.setTypeRC();
   line_follower_8left.setSensorPins((const uint8_t[]){ 33, 27, 18, 19, 22 }, 5);
   line_follower_8right.setSensorPins((const uint8_t[]){ 32, 5, 17, 16, 4 }, 5);
 
@@ -121,6 +122,8 @@ void setup() {
   }
 
   Serial.begin(115200);
+  Serial.print("Voltage: ");
+  Serial.println(voltage);
 }
 
 void loop() {
@@ -144,18 +147,17 @@ void loop() {
   }
 
   // print array
-  if (debug == false) {
+  if (debug == true) {
     Serial.print("Print Array Sensores:");
     for (int i = 0; i < NUM_OF_SENSORS; i++) {
       Serial.print(all_sensor_reads[i]);
       Serial.print(" ");
     }
-    Serial.print("   ");
+    Serial.println("   ");
   }
 
   // tratativa de chegada
   int count_sensors = 0;
-  int lines = 0;
   for (int i = 0; i < NUM_OF_SENSORS; i++) {
     if (i >= 10 && line_follower.values[i] == 0) {
       count_sensors += 1;
@@ -163,18 +165,22 @@ void loop() {
   }
 
   elapsed_time_line = 0;
-  if (count_sensors >= 4 && line_flag >= 4) {
-    lines++;
-    Serial.println(lines);
-    if (lines >= 2) {
+  if (count_sensors >= 2 && line_flag >= 4) {
+    right_lines_read++;
+    Serial.println(right_lines_read);
+    if (right_lines_read >= 2) {
       while (elapsed_time_line <= 1) {
+        Serial.print(" ");
+        Serial.print(elapsed_time_line);
+        Serial.println(" ");
         previous_time_line = current_time_line;
         current_time_line = micros();
-        elapsed_time_line = (current_time_line - previous_time_line) / 1e6;
+        elapsed_time_line = (current_time_line - previous_time_line) / 1000000;
       }
+      Serial.print(" STOP ");
       while (1) {
-        left_motor.stop();
-        right_motor.stop();
+        analogWrite(EN1, 0);
+        analogWrite(EN2, 0);
       }
     }
   }
