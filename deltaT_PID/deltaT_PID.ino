@@ -159,20 +159,21 @@ void loop() {
   // tratativa de chegada
   int count_sensors = 0;
   for (int i = 0; i < NUM_OF_SENSORS; i++) {
-    if (i >= 10 && line_follower.values[i] == 0) {
+    if (i >= 10 && all_sensor_reads[i] == 0) {
       count_sensors += 1;
     }
   }
-
+  Serial.print("count: ");
+  Serial.print(count_sensors);
+  Serial.print(" ");
   elapsed_time_line = 0;
   if (count_sensors >= 2 && line_flag >= 4) {
     right_lines_read++;
-    Serial.println(right_lines_read);
+    Serial.print("lines: ");
+    Serial.print(right_lines_read);
+    Serial.print(" ");
     if (right_lines_read >= 2) {
       while (elapsed_time_line <= 1) {
-        Serial.print(" ");
-        Serial.print(elapsed_time_line);
-        Serial.println(" ");
         previous_time_line = current_time_line;
         current_time_line = micros();
         elapsed_time_line = (current_time_line - previous_time_line) / 1000000;
