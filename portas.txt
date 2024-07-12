@@ -1,0 +1,17 @@
+ΔV
+Sensor Esquerda: 33, 32, 19, 21, 23
+Sensor Centro: 13, 12, 14, 35, 34
+Sensor Direita:  18, 5, 16, 17, 4
+In1: 15
+In2: 2
+En1: 26
+En2: 25
+
+ΔT
+Sensor Esquerda: 33, 27, 18, 19, 22
+Sensor Centro: 13, 12, 14, 34, 35
+Sensor Direita: 32, 5, 17, 16, 4
+In1: 15
+In2: 2
+En1: 26
+En2: 25
