@@ -60,7 +60,8 @@ QTRSensors line_follower_8right;
 const int EN1 = 26;  // portas de controle PWM ponte H
 const int EN2 = 25;
 const int NUM_OF_SENSORS = 15;
-const int EMITTER_PIN = 22;
+const int LEFT_EMITTER_PIN = 27;
+const int RIGHT_EMITTER_PIN = 22;
 
 double error;  // variaveis necessarias para controle pd
 double previous_error;
@@ -72,7 +73,7 @@ double d_share;
 double pd_correction;
 
 const float KP = 4;  // constantes de calibracao
-const float KD = 1.5;
+const float KD = 2;
 
 const float SPEED = 120;
 const float VOLT = 9;
@@ -86,12 +87,15 @@ float right_volt;
 // int objects_found[NUM_OF_SENSORS];
 // int current_object_info[2];
 float sensor_dist_to_line[] = {-88, -81, -72, -66, -58, -42, -23, 0, 23, 42, 58, 66, 72, 81, 88};
+float sensor_bias[] = {0.3, 0.3, 0.3, 0.3, 0.3, 1, 1, 1, 1, 1, 0.3, 0.3, 0.3, 0.3, 0.3};
 int line_flag = 0;
 
 uint16_t sensor_values_left[5];
 uint16_t sensor_values_right[5];
 
 bool all_sensor_reads[NUM_OF_SENSORS];
+
+bool debug = false;
 
 void setup() {
   pinMode(EN1, OUTPUT);
@@ -102,8 +106,8 @@ void setup() {
 
   line_follower_8left.setTypeRC();
   line_follower_8right.setTypeRC();
-  line_follower_8left.setEmitterPin(EMITTER_PIN);
-  line_follower_8right.setEmitterPin(EMITTER_PIN);
+  line_follower_8left.setEmitterPin(LEFT_EMITTER_PIN);
+  line_follower_8right.setEmitterPin(RIGHT_EMITTER_PIN);
   line_follower_8left.setSensorPins((const uint8_t[]){33, 32, 19, 21, 23}, 5);
   line_follower_8right.setSensorPins((const uint8_t[]){18, 5, 16, 17, 4}, 5);
 
@@ -131,12 +135,14 @@ void loop() {
   }
 
   // print array
-  Serial.println("Print Array Sensores:");
-  for (int i = 0; i < NUM_OF_SENSORS; i++) {
-    Serial.print(all_sensor_reads[i]);
-      Serial.print(" ");
+  if (debug == false) {
+    Serial.print("Print Array Sensores:");
+    for (int i = 0; i < NUM_OF_SENSORS; i++) {
+      Serial.print(all_sensor_reads[i]);
+        Serial.print(" ");
+    }
+    Serial.print("   ");
   }
-  Serial.println("");
 
   // tratativa de chegada
   int count_sensors = 0;
@@ -208,12 +214,12 @@ void loop() {
   float count = 0;
   error = 0;
   for(int i = 0; i < NUM_OF_SENSORS; i++){
-    if (line_follower.values[i] == 0) {
-      error += sensor_dist_to_line[i];
+    if (all_sensor_reads[i] == 0) {
+      error += sensor_dist_to_line[i] * sensor_bias[i];
       count += 1;
     }
   }
-  if (count > 0){
+  if (count > 0) {
     error = error/count;
   }
   else {
@@ -232,15 +238,17 @@ void loop() {
   pd_correction = constrain(pd_correction, -SPEED, SPEED);
 
   // print correcao pd
-  Serial.println("Print Correcao:");
-  Serial.print(error);
-  Serial.print(" ");
-  Serial.print(p_share);
-  Serial.print(" ");
-  Serial.print(d_share);
-  Serial.print(" ");
-  Serial.print(pd_correction);
-  Serial.println("");
+  if (debug == false) {
+    Serial.print("Print Correcao:");
+    Serial.print(error);
+    Serial.print(" ");
+    Serial.print(p_share);
+    Serial.print(" ");
+    Serial.print(d_share);
+    Serial.print(" ");
+    Serial.print(pd_correction);
+    Serial.print("   ");
+  }
 
   // aplica a correcao PD nos motores
   int increment = 0;
@@ -274,15 +282,17 @@ void loop() {
     line_flag = 0;
   }
 
-  // print motores
-  Serial.println("Print Motores:");
-  Serial.print(left_speed);
-  Serial.print(" ");
-  Serial.println(right_speed);
+  if (debug == false) {
+    // print motores
+    Serial.print("Print Motores:");
+    Serial.print(left_speed);
+    Serial.print(" ");
+    Serial.println(right_speed);
+  }
 
   // TO DO: evitar escapar da linha com os sensores mais externos
 
   // memset(objects_found, 0, sizeof(objects_found));
 
-  delay(20);
+  delay(500);
 }
