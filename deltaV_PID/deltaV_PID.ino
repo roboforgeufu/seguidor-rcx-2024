@@ -1,3 +1,5 @@
+#include <QTRSensors.h>
+
 class DCMotor {
 public:
   int voltage = 200;
@@ -52,9 +54,16 @@ DCMotor left_motor(2);
 DCMotor right_motor(15);
 LineFollower line_follower(13, 12, 14, 27, 33);
 
+QTRSensors line_follower_8left;
+QTRSensors line_follower_8right;
+
+uint16_t sensor_values_left[5];
+uint16_t sensor_values_right[5];
+
 const int EN1 = 26;  // portas de controle PWM ponte H
 const int EN2 = 25;
-const int NUM_OF_SENSORS = 5;
+const int NUM_OF_SENSORS = 15;
+const int EMITTER_PIN = 22;
 
 double error;  // variaveis necessarias para controle pd
 double previous_error;
@@ -68,7 +77,7 @@ double pd_correction;
 const float KP = 4;  // constantes de calibracao
 const float KD = 1.5;
 
-const float SPEED = 110;
+const float SPEED = 120;
 const float VOLT = 9;
 
 float voltage = map(VOLT, 0, 12, 0, 255);
@@ -79,8 +88,10 @@ float right_volt;
 
 int objects_found[NUM_OF_SENSORS];
 int current_object_info[2];
-float sensor_dist_to_line[] = {-42, -23, 0, 23, 42};
+float sensor_dist_to_line[] = {-88, -81, -72, -66, -58, -42, -23, 0, 23, 42, 58, 66, 72, 81, 88};
 int line_flag = 0;
+
+bool all_sensor_reads[NUM_OF_SENSORS];
 
 void setup() {
   Serial.begin(115200);
@@ -88,6 +99,15 @@ void setup() {
   pinMode(EN2, OUTPUT);
   Serial.print("Voltage: ");
   Serial.println(voltage);
+
+  line_follower_8left.setTypeRC();
+  line_follower_8right.setTypeRC();
+  line_follower_8left.setEmitterPin(EMITTER_PIN);
+  line_follower_8right.setEmitterPin(EMITTER_PIN);
+  line_follower_8left.setSensorPins((const uint8_t[]){33, 27, 18, 19, 22}, 5);
+  line_follower_8right.setSensorPins((const uint8_t[]){32, 5, 17, 16, 4}, 5);
+  
+  Serial.begin(115200);
 }
 
 void loop() {
@@ -95,14 +115,52 @@ void loop() {
   // monta o array com os valores lidos pelos sensores
   line_follower.refresh_values();  // atualiza os valores do sensor de 5 canais
   // TO DO: adicionar os valores dos sensores de 8 canais
+  line_follower_8left.read(sensor_values_left);
+  line_follower_8right.read(sensor_values_right);
+
+  // Monta array de todos os sensores
+  for (int i = 0; i <= NUM_OF_SENSORS - 1; i++) {
+    bool read;
+    if (i < 5){
+      read = (bool) (sensor_values_left[i] >= 500);
+    }else if (i < 10) {
+      read = line_follower.values[i-5];
+    } else {
+      read = (bool) (sensor_values_right[i-10] >= 500);
+    }
+    all_sensor_reads[i] = read;
+  }
 
   // print array
   Serial.println("Print Array Sensores:");
   for (int i = 0; i <= NUM_OF_SENSORS - 1; i++) {
-    Serial.print(line_follower.values[i]);
+    Serial.print(all_sensor_reads[i]);
       Serial.print(" ");
   }
   Serial.println("");
+
+  int count_sensors = 0;
+  int lines = 0;
+  for(int i = 0; i <= NUM_OF_SENSORS - 1; i++){
+    if (i >= 10 && line_follower.values[i] == 0) {
+      count_sensors += 1;
+    }
+  }
+  if(count_sensors >= 4){
+    lines++;
+    if (lines >= 2){
+      while (elapsed_time <= 1){
+        previous_time = current_time;
+        current_time = millis();
+        elapsed_time = (current_time - previous_time) / 1000;
+      }
+      while(1){
+        left_motor.stop();
+        right_motor.stop();
+      }
+    }
+  }
+
 
   // // calcula o tamanho dos objetos lidos pelos sensores
   // int start_pos = 0;
@@ -150,7 +208,7 @@ void loop() {
   previous_error = error;
   float count = 0;
   error = 0;
-  for(int i = 0; i <= NUM_OF_SENSORS - 1; i++){
+  for(int i = 5; i <= NUM_OF_SENSORS - 6; i++){
     if (line_follower.values[i] == 0) {
       error += sensor_dist_to_line[i];
       count += 1;
