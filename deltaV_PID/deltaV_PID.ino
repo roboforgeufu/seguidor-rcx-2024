@@ -65,7 +65,7 @@ const int RIGHT_EMITTER_PIN = 23;
 
 double error;  // variaveis necessarias para controle pd
 double previous_error;
-double current_time; 
+double current_time;
 double previous_time;
 double elapsed_time;
 double p_share;
@@ -76,18 +76,17 @@ double current_time_line;
 double previous_time_line;
 double right_line_seen_timestamp = 0;
 
-const float KP = 3;  // constantes de calibracao
-const float KD = 5;
+const float KP = 4.5;  // constantes de calibracao
+const float KD = 2;
 
-const float SPEED = 120;
-const float VOLT = 10;
+const float SPEED = 110;
+const float VOLT = 8;
 
 float voltage = map(VOLT, 0, 12, 0, 255);
 float left_speed;
 float right_speed;
 float left_volt;
 float right_volt;
-
 
 // int objects_found[NUM_OF_SENSORS];
 // int current_object_info[2];
@@ -96,34 +95,33 @@ float sensor_dist_to_line[] = { -88, -81, -72, -66, -58, -42, -23, 0, 23, 42, 58
 int line_flag = 0;
 int right_lines_read = 0;
 
-
 uint16_t sensor_values_left[5];
 uint16_t sensor_values_right[5];
 
 bool all_sensor_reads[NUM_OF_SENSORS];
 
-bool debug = true;
+bool debug = false;
 
 void setup() {
   pinMode(EN1, OUTPUT);
   pinMode(EN2, OUTPUT);
 
-
   line_follower_8left.setTypeRC();
   line_follower_8left.setEmitterPin(LEFT_EMITTER_PIN);
   line_follower_8right.setEmitterPin(RIGHT_EMITTER_PIN);
   line_follower_8right.setTypeRC();
-  line_follower_8left.setSensorPins((const uint8_t[]){33, 32, 19, 21, 23}, 5);
-  line_follower_8right.setSensorPins((const uint8_t[]){18, 5, 16, 17, 4}, 5);
+  line_follower_8left.setSensorPins((const uint8_t[]){ 33, 32, 19, 21, 23 }, 5);
+  line_follower_8right.setSensorPins((const uint8_t[]){ 18, 5, 16, 17, 4 }, 5);
 
   for (uint16_t i = 0; i < 200; i++) {
     line_follower_8left.calibrate();
     line_follower_8right.calibrate();
   }
-
-  Serial.begin(115200);
-  Serial.print("Voltage: ");
-  Serial.println(voltage);
+  if (debug) {
+    Serial.begin(115200);
+    Serial.print("Voltage: ");
+    Serial.println(voltage);
+  }
 }
 
 void loop() {
@@ -147,7 +145,7 @@ void loop() {
   }
 
   // print array
-  if (debug == true) {
+  if (debug) {
     Serial.print("Print Array Sensores:");
     for (int i = 0; i < NUM_OF_SENSORS; i++) {
       Serial.print(all_sensor_reads[i]);
@@ -165,7 +163,7 @@ void loop() {
   }
 
   // tratativa primeiro tempo
-  if(
+  if (
     (right_line_seen_timestamp == 0 || millis() - right_line_seen_timestamp > 1000)
     && count_sensors_seen_right >= 2
     && line_flag >= 5) {
@@ -179,23 +177,24 @@ void loop() {
       Serial.println("");
     }
   }
-  
+
   if (right_lines_read >= 2) {
-    while (millis() - right_line_seen_timestamp <= 400) {
-      if (debug){
+    while (millis() - right_line_seen_timestamp <= 1000) {
+      if (debug) {
         Serial.print("STOPPING: ");
         Serial.print(millis() - right_line_seen_timestamp);
         Serial.print("/100");
         Serial.println("");
       }
     }
-    Serial.print(" STOP ");
+    if (debug) {
+      Serial.print(" STOP ");
+    }
     while (1) {
       analogWrite(EN1, 0);
       analogWrite(EN2, 0);
     }
   }
-
 
   // // calcula o tamanho dos objetos lidos pelos sensores
   // int start_pos = 0;
@@ -267,7 +266,7 @@ void loop() {
   pd_correction = constrain(pd_correction, -SPEED, SPEED);
 
   // print correcao pd
-  if (debug == false) {
+  if (debug) {
     Serial.print("Print Correcao:");
     Serial.print(error);
     Serial.print(" ");
@@ -281,8 +280,8 @@ void loop() {
 
   // aplica a correcao PD nos motores
   int increment = 0;
-  if (line_flag >= 5) {
-    increment = 10 * (line_flag / 5);
+  if (line_flag >= 8) {
+    increment = 10 * (line_flag / 8);
   }
   if (increment > 100) {
     increment = 120;
@@ -291,16 +290,16 @@ void loop() {
   // motor esquerdo
   left_speed = SPEED + pd_correction + increment;
   analogWrite(EN1, left_speed);
-  left_volt = voltage + (pd_correction / 2  );
-  left_volt = constrain(left_volt, 160, 255);
+  left_volt = voltage + (pd_correction / 1.5);
+  left_volt = constrain(left_volt, 128, 255);
   left_motor.set_voltage(left_volt);
   left_motor.run();
 
   // motor direito
   right_speed = SPEED - pd_correction + increment;
   analogWrite(EN2, right_speed);
-  right_volt = voltage - (pd_correction / 2 );
-  right_volt = constrain(right_volt, 160, 255);
+  right_volt = voltage - (pd_correction / 1.5);
+  right_volt = constrain(right_volt, 128, 255);
   right_motor.set_voltage(right_volt);
   right_motor.run();
 
@@ -310,7 +309,7 @@ void loop() {
     line_flag = 0;
   }
 
-  if (debug == false) {
+  if (debug) {
     // print motores
     Serial.print("Print Motores:");
     Serial.print(left_speed);
